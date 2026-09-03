@@ -15,3 +15,36 @@ Customer segments
 High-risk activity
 
 Your job is to analyze the company's transactional data using SQL only and provide actionable business insights.
+
+## Dataset
+
+| Table          |  Rows | Purpose                          |
+| -------------- | ----: | -------------------------------- |
+| `customers`    |   300 | Customer information             |
+| `accounts`     |   450 | Customer bank/wallet accounts    |
+| `merchants`    |   100 | Merchant information             |
+| `transactions` | 5,000 | Payment transactions             |
+| `disputes`     |   350 | Transaction disputes/chargebacks |
+
+
+## Table relationships
+
+customers
+    |
+    | customer_id
+    ↓
+accounts
+    |
+    | account_id
+    ↓
+transactions
+    |
+    | transaction_id
+    ↓
+disputes
+
+transactions
+    |
+    | merchant_id
+    ↓
+merchants
