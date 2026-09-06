@@ -23,7 +23,7 @@ Your job is to analyze the company's transactional data using SQL only and provi
 | -------------- | ----: | -------------------------------- |
 | `customers`    |   300 | Customer information             |
 | `accounts`     |   450 | Customer bank/wallet accounts    |
-| `merchants`    |   100 | Merchant information             |
+| `merchants`    |   101 | Merchant information             |
 | `transactions` | 5,000 | Payment transactions             |
 | `disputes`     |   350 | Transaction disputes/chargebacks |
 
@@ -38,11 +38,7 @@ erDiagram
     transactions ||--o{ disputes : "transaction_id"
 ```
 
-## Business problems you need to solve
-
-Don't immediately start writing random SQL queries.
-
-Your job is to answer these business questions.
+## Business problems that we will be answering
 
 ### Phase 1 — Data Exploration
 
@@ -64,10 +60,10 @@ Analysis: The company has total of 450 accounts, 300 customers, 101 merchants an
 
 Query : 
 
-SELECT City, COUNT(\*) AS Total_Customers
-FROM fintechproject.customers
-GROUP BY city
-ORDER BY COUNT(*) DESC
+    SELECT City, COUNT(*) AS Total_Customers
+    FROM fintechproject.customers
+    GROUP BY city
+    ORDER BY COUNT(*) DESC
 
 ![City Counts](images/Q2.png)
 
@@ -75,6 +71,40 @@ Analysis: We can deduce, the top three cities with highest customer base is Ahme
 
 #### Q3 What percentage of customers have: Verified KYC, Pending KYC and Rejected KYC?
 
+Query : 
+
+    SELECT
+    ROUND(COUNTIF(kyc_status = "Verified") * 100 / COUNT(*), 2) AS Verified_Percent,
+    ROUND(COUNTIF(kyc_status = "Pending") * 100 / COUNT(*), 2)  AS Pending_Percent,
+    ROUND(COUNTIF(kyc_status = "Rejected") * 100 / COUNT(*), 2) AS Rejected_Percent,
+    FROM fintechproject.customers
+
+![KYC Status Percentage](images/Q3.png)
+
+Analysis: Most customers are KYC-verified (81.67%, about 245 of 300), which is a healthy compliance base. Pending KYC is 13.67% (about 41 customers) and is the main onboarding bottleneck. Rejected KYC is small at 4.67% (about 14 customers), but those users cannot transact fully and should be reviewed for fraud or documentation issues. 
+
 #### Q4 How many accounts are: Active, Dormant, Closed?
 
+Query : 
+
+    SELECT Account_Status, COUNT(*) AS Total_Count
+    FROM fintechproject.accounts
+    GROUP BY Account_Status
+
+![Account Status](images/Q4.png)
+
+Analysis: Out of 450 accounts, 367 are Active (81.6%), so most of the book is usable. Dormant accounts are 53 (11.8%) and are a reactivation opportunity before they churn. Closed accounts are 30 (6.7%), a small but permanent loss that is worth checking against disputes and failed payments. 
+
 #### Q5 What are the different transaction types and how frequently does each occur?
+
+Query:
+
+    SELECT transaction_type, COUNT(*) transaction_count
+    FROM fintechproject.transactions
+    GROUP BY transaction_type
+    ORDER BY COUNT(*) DESC
+
+![Transaction type frequency](images/Q5.png)
+
+Analysis: Out of 5000 total transaction types, the "Purchase" type is the frequently used type that is 2427 times, followed by "Transfer" and "Bill_Payment" with 1091 and 739 times
+
