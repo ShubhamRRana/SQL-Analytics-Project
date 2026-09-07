@@ -40,71 +40,164 @@ erDiagram
 
 ## Business problems that we will be answering
 
-### Phase 1 — Data Exploration
+### Phase 1 — Core Business Analysis
 
-#### Q1 How many customers, accounts, merchants and transactions does the company have?
+#### Q1. Overall Transaction Performance
 
-Query : 
+Calculate:
+Total transactions
+Successful transactions
+Failed transactions
+Success rate
+Total successful transaction amount
+Average successful transaction amount
 
-SELECT
-  (SELECT COUNT(\*) FROM fintechproject.accounts) as Total_Accounts,
-  (SELECT COUNT(\*) FROM fintechproject.customers) as Total_Customers,
-  (SELECT COUNT(\*) FROM fintechproject.merchants) as Total_Merchants, 
-  (SELECT COUNT(\*) FROM fintechproject.transactions) as Total_Transactions
+#### Q2. Monthly Transaction Performance
 
-![Accounts,Customer,Merchants,Transactions Count](images/Q1.png)
+For each month, calculate:
+Total successful transactions
+Total successful transaction amount
+Average transaction amount
+Month-over-month transaction growth %
 
-Analysis: The company has total of 450 accounts, 300 customers, 101 merchants and 5000 transactions.
+#### Q3. Top Customers
 
-#### Q2 How many customers are in each city?
+Find the top 10 customers by total successful transaction amount.
+Return: customer_id, total_transaction_amount
 
-Query : 
+#### Q4. Customers Above Average
 
-    SELECT City, COUNT(*) AS Total_Customers
-    FROM fintechproject.customers
-    GROUP BY city
-    ORDER BY COUNT(*) DESC
+Find customers whose total successful transaction amount is greater than the average customer transaction amount.
 
-![City Counts](images/Q2.png)
+Return:customer_id, total_transaction_amount
 
-Analysis: We can deduce, the top three cities with highest customer base is Ahmedabad, Chennai and Delhi with total of 47, 41 and 39 customers respectively. Among all the cities Benguluru has the lowest custmer base as just 26 customers.
+#### Q5. Customer Ranking by City
 
-#### Q3 What percentage of customers have: Verified KYC, Pending KYC and Rejected KYC?
+Rank customers by successful transaction amount within each city.
+Return: city, customer_id, total_transaction_amount and customer_rank
 
-Query : 
 
-    SELECT
-    ROUND(COUNTIF(kyc_status = "Verified") * 100 / COUNT(*), 2) AS Verified_Percent,
-    ROUND(COUNTIF(kyc_status = "Pending") * 100 / COUNT(*), 2)  AS Pending_Percent,
-    ROUND(COUNTIF(kyc_status = "Rejected") * 100 / COUNT(*), 2) AS Rejected_Percent,
-    FROM fintechproject.customers
+### Phase 2 — Merchant & Payment Analysis
 
-![KYC Status Percentage](images/Q3.png)
+#### Q6. Payment Channel Performance
 
-Analysis: Most customers are KYC-verified (81.67%, about 245 of 300), which is a healthy compliance base. Pending KYC is 13.67% (about 41 customers) and is the main onboarding bottleneck. Rejected KYC is small at 4.67% (about 14 customers), but those users cannot transact fully and should be reviewed for fraud or documentation issues. 
+For each payment channel calculate:
+Total transactions
+Successful transactions
+Failed transactions
+Success rate
+Total successful transaction amount
+Average successful transaction amount
 
-#### Q4 How many accounts are: Active, Dormant, Closed?
+Then identify the best and worst performing channel.
 
-Query : 
+#### Q7. Merchant Performance
 
-    SELECT Account_Status, COUNT(*) AS Total_Count
-    FROM fintechproject.accounts
-    GROUP BY Account_Status
+For each merchant calculate:
+Total transactions
+Successful transactions
+Failed transactions
+Success rate
+Total successful transaction amount
 
-![Account Status](images/Q4.png)
+Then find the top 10 merchants by transaction value.
 
-Analysis: Out of 450 accounts, 367 are Active (81.6%), so most of the book is usable. Dormant accounts are 53 (11.8%) and are a reactivation opportunity before they churn. Closed accounts are 30 (6.7%), a small but permanent loss that is worth checking against disputes and failed payments. 
+#### Q8. High-Risk Merchants
 
-#### Q5 What are the different transaction types and how frequently does each occur?
+Identify merchants that have:
+At least 50 transactions
+Success rate below 90%
+Dispute rate above the overall merchant dispute rate
 
-Query:
+Return the merchant and relevant metrics.
 
-    SELECT transaction_type, COUNT(*) transaction_count
-    FROM fintechproject.transactions
-    GROUP BY transaction_type
-    ORDER BY COUNT(*) DESC
+This is one of the strongest questions in the project because it combines multiple datasets and business conditions.
 
-![Transaction type frequency](images/Q5.png)
+### Phase 3 — Customer & Risk Analysis
 
-Analysis: Out of 5000 total transaction types, the "Purchase" type is the frequently used type that is 2427 times, followed by "Transfer" and "Bill_Payment" with 1091 and 739 times
+#### Q9. Customer Transaction History
 
+For every customer with at least one successful transaction, find:
+
+First successful transaction date
+Most recent successful transaction date
+Total successful transactions
+Total successful transaction amount
+
+#### Q10. Customer Contribution
+
+Calculate what percentage of the company's total successful transaction value is generated by each customer.
+Return: customer_id, total_transaction_amount and percentage_of_total
+
+The percentages should total approximately 100%.
+
+#### Q11. Customer Segmentation
+
+Create customer segments based on total successful transaction amount:
+< ₹50,000       → Low Value
+₹50,000–₹2L     → Medium Value
+> ₹2L            → High Value
+
+Calculate for each segment:
+
+Number of customers
+Total transaction value
+Percentage of total transaction value
+Average transaction value
+
+SQL skills: CTE + CASE + aggregation.
+
+#### Q12. Repeated Failed Transactions
+
+Find customers who have experienced 5 or more failed transactions.
+
+Return:
+
+customer_id
+failed_transaction_count
+failed_transaction_amount
+
+Then identify which customer has the highest failed transaction amount.
+
+### Phase 4 — Advanced SQL & Business Insights
+
+#### Q13. Suspicious Transaction Pattern
+
+Identify customers who had at least 3 failed transactions within a 24-hour period.
+
+Return:
+
+customer_id
+first_failed_transaction
+last_failed_transaction
+failed_transaction_count
+
+SQL skills: Window functions / date-time analysis.
+
+#### Q14. Transaction Concentration
+
+Determine how dependent the company is on its biggest customers.
+
+Calculate the percentage of total successful transaction value generated by:
+
+Top 10 customers
+Top 20 customers
+Top 50 customers
+
+Answer:
+
+"Does a small group of customers contribute a disproportionate amount of the company's transaction value?"
+
+#### Q15. Executive Business Analysis
+
+Using the results from Q1–Q14, provide 5 data-driven recommendations for the company's management.
+
+Your recommendations should cover areas such as:
+
+Payment channel performance
+Customer value
+Merchant risk
+Transaction failures
+Suspicious activity
+
+Every recommendation must be supported by an actual finding from your SQL analysis.
