@@ -44,38 +44,130 @@ erDiagram
 
 #### Q1. Overall Transaction Performance
 
-Calculate:
-Total transactions
-Successful transactions
-Failed transactions
-Success rate
-Total successful transaction amount
-Average successful transaction amount
+Calculate: Total transactions, Successful transactions, Failed transactions, Success rate, Total successful transaction amount and Average successful transaction amount
+
+Query:
+
+    SELECT
+    (SELECT COUNT(*) FROM fintechproject.transactions) AS Total_transaction,
+    (SELECT COUNTIF(status = "Success") FROM fintechproject.transactions) AS Total_successful_transaction,
+    (SELECT COUNTIF(status = "Failed") FROM fintechproject.transactions) AS Total_failed_transaction,
+    (SELECT ROUND(COUNTIF(status = "Success") * 100.0 / COUNT(*),2) FROM fintechproject.transactions) as Success_rate,
+    (SELECT ROUND(SUM(amount),2) FROM fintechproject.transactions where status = "Success") as Total_successful_amount,
+    (SELECT ROUND(AVG(amount),2) FROM fintechproject.transactions where status = "Success") as Total_average_successful_amount
+
+![Transaction details](images/Q1.png)
+
+Analysis: 
 
 #### Q2. Monthly Transaction Performance
 
-For each month, calculate:
-Total successful transactions
-Total successful transaction amount
-Average transaction amount
-Month-over-month transaction growth %
+For each month, calculate: Total successful transactions, Total successful transaction amount, Average transaction amount and Month-over-month transaction growth %
+
+Query:
+
+    WITH Transaction_Details AS (
+    SELECT
+        DATE_TRUNC(DATE(transaction_timestamp), MONTH) AS Month,
+        COUNT(*) AS Total_Transactions,
+        ROUND(SUM(amount),2) as Total_Sum_Amount,
+        ROUND(AVG(amount),2) as Total_Avg_Amount,
+    FROM fintechproject.transactions
+    WHERE status = "Success"
+    GROUP BY DATE_TRUNC(DATE(transaction_timestamp), MONTH)
+    ORDER BY Month
+    )
+    SELECT
+        Month,
+        Total_Transactions,
+        Total_Avg_Amount,
+        Total_Sum_Amount,
+        LAG(Total_Sum_Amount) OVER(ORDER BY Month) AS Previous_Month_Amount,
+        ROUND(
+            (Total_Sum_Amount - LAG(Total_Sum_Amount) OVER(ORDER BY Month)) / NULLIF(LAG(Total_Sum_Amount) OVER(ORDER BY Month) , 0) * 100
+            ,2) AS MoM_Percent_Growth
+    FROM Transaction_Details
+
+![MoM successful transaction growth](images/Q2.png)
+
+Analysis: 
 
 #### Q3. Top Customers
 
-Find the top 10 customers by total successful transaction amount.
-Return: customer_id, total_transaction_amount
+Find the top 10 customers by total successful transaction amount. Return: customer_id, total_transaction_amount
+
+Query:
+
+    SELECT
+        c.customer_id,
+        ROUND(SUM(amount),2) AS total_transaction_amount
+    FROM fintechproject.customers c 
+    JOIN fintechproject.accounts a 
+        ON c.customer_id = a.customer_id
+    JOIN fintechproject.transactions t
+        ON a.account_id = t.account_id
+    WHERE t.status = "Success"
+    GROUP BY c.customer_id
+    ORDER BY total_transaction_amount DESC
+    LIMIT 10
+
+![Customer total successful transaction amount](images/Q3.png)
+
+Analysis: 
 
 #### Q4. Customers Above Average
 
-Find customers whose total successful transaction amount is greater than the average customer transaction amount.
+Find customers whose total successful transaction amount is greater than the average customer transaction amount. Return: customer_id, total_transaction_amount
 
-Return:customer_id, total_transaction_amount
+Query:
+
+    WITH Customer_Transaction_Details AS (
+        SELECT
+            c.customer_id,
+            ROUND(SUM(amount),2) AS total_transaction_amount
+        FROM fintechproject.customers c 
+            JOIN fintechproject.accounts a 
+                ON c.customer_id = a.customer_id
+            JOIN fintechproject.transactions t
+                ON a.account_id = t.account_id
+        WHERE t.status = "Success" 
+        GROUP BY c.customer_id
+    )
+    SELECT 
+        customer_id,
+        total_transaction_amount
+    FROM Customer_Transaction_Details
+    WHERE total_transaction_amount > (
+        SELECT AVG(total_transaction_amount) FROM Customer_Transaction_Details
+    )
+    ORDER BY total_transaction_amount DESC
+
+![Above average customer transaction amount](images/Q4.png)
+
+Analysis:
 
 #### Q5. Customer Ranking by City
 
 Rank customers by successful transaction amount within each city.
 Return: city, customer_id, total_transaction_amount and customer_rank
 
+Query:
+
+    SELECT
+        c.city,
+        c.customer_id,
+        ROUND(SUM(amount),2) AS total_transaction_amount,
+        DENSE_RANK() OVER(PARTITION BY c.city ORDER BY SUM(amount) DESC) AS customer_rank
+    FROM fintechproject.customers c 
+    JOIN fintechproject.accounts a 
+        ON c.customer_id = a.customer_id
+    JOIN fintechproject.transactions t
+        ON a.account_id = t.account_id
+    WHERE t.status = "Success" 
+    GROUP BY c.city, c.customer_id
+    ORDER BY city, customer_rank
+
+![Customer ranked successful amount by city](images/Q5.png)
 
 ### Phase 2 — Merchant & Payment Analysis
 
