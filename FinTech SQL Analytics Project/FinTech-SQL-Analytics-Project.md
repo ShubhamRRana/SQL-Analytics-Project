@@ -228,7 +228,7 @@ Return the merchant and relevant metrics. This is one of the strongest questions
 Query:
 
     WITH overall_dispute_rate AS  (
-        SELECT COUNT(d.transaction_id) * 100.0 / COUNT(t.transaction_id) AS         overall_dispute_rate
+        SELECT COUNT(d.transaction_id) * 100.0 / COUNT(t.transaction_id) AS overall_dispute_rate
         FROM fintechproject.transactions t
         LEFT JOIN fintechproject.disputes d
             ON t.transaction_id = d.transaction_id
