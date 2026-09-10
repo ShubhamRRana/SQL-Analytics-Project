@@ -173,37 +173,86 @@ Query:
 
 #### Q6. Payment Channel Performance
 
-For each payment channel calculate:
-Total transactions
-Successful transactions
-Failed transactions
-Success rate
-Total successful transaction amount
-Average successful transaction amount
-
+For each payment channel calculate: Total transactions, Successful transactions, Failed transactions, Success rate, Total successful transaction amount and Average successful transaction amount. 
 Then identify the best and worst performing channel.
+
+Query:
+    
+    SELECT
+        payment_channel,
+        COUNT(*) AS total_transactions,
+        COUNTIF(status = 'Success') AS successful_transactions,
+        COUNTIF(status = 'Failed') AS failed_transactions,
+        ROUND(SUM(amount), 2) AS successful_transaction_amount,
+        ROUND(COUNTIF(status = 'Success') * 100.0 / COUNT(*), 2) AS success_rate,
+        ROUND(SUM(CASE WHEN status = 'Success' THEN amount ELSE 0 END), 2) AS successful_transaction_amount,
+        ROUND(avg(CASE WHEN status = 'Success' THEN amount END), 2) AS average_successful_transaction_amount
+    FROM fintechproject.transactions
+    GROUP BY payment_channel
+    ORDER BY success_rate DESC
+
+![Transaction details](images/Q6.png)
+
+Analysis:
 
 #### Q7. Merchant Performance
 
-For each merchant calculate:
-Total transactions
-Successful transactions
-Failed transactions
-Success rate
-Total successful transaction amount
+For each merchant calculate: Total transactions, Successful transactions, Failed transactions, Success rate and Total successful transaction amount . Then find the top 10 merchants by transaction value.
 
-Then find the top 10 merchants by transaction value.
+Query:
+
+    SELECT
+        m.merchant_id,
+        m.merchant_name,
+        COUNT(*) AS total_transactions,
+        COUNTIF(status = 'Success') AS successful_transactions,
+        COUNTIF(status = 'Failed') AS failed_transactions,
+        ROUND(COUNTIF(status = 'Success') * 100.0 / COUNT(*), 2) AS success_rate,
+        ROUND(SUM(CASE WHEN status = 'Success' THEN amount ELSE 0 END), 2) AS successful_transaction_amount
+    FROM fintechproject.transactions t
+        JOIN fintechproject.merchants m 
+            ON t.merchant_id = m.merchant_id
+    GROUP BY m.merchant_id, m.merchant_name
+    ORDER BY successful_transaction_amount DESC
+    LIMIT 10
+
+![Merchant transaction details](images/Q7.png)
+
+Analysis:
 
 #### Q8. High-Risk Merchants
 
-Identify merchants that have:
-At least 50 transactions
-Success rate below 90%
-Dispute rate above the overall merchant dispute rate
+Identify merchants that have: At least 50 transactions, Success rate below 90% and Dispute rate above the overall merchant dispute rate
+Return the merchant and relevant metrics. This is one of the strongest questions in the project because it combines multiple datasets and business conditions.
 
-Return the merchant and relevant metrics.
+Query:
 
-This is one of the strongest questions in the project because it combines multiple datasets and business conditions.
+    WITH overall_dispute_rate AS  (
+        SELECT COUNT(d.transaction_id) * 100.0 / COUNT(t.transaction_id) AS         overall_dispute_rate
+        FROM fintechproject.transactions t
+        LEFT JOIN fintechproject.disputes d
+            ON t.transaction_id = d.transaction_id
+    )
+    SELECT 
+        m.merchant_id,
+        m.merchant_name,
+        count(t.transaction_id) as total_transactions,
+        count(d.transaction_id) as dispute_transactions,
+        ROUND(COUNTIF(status = 'Success') * 100.0 / COUNT(*),2) AS success_rate,
+        ROUND(count(d.transaction_id) * 100.0 / count(t.transaction_id),2) AS dispute_rate
+    FROM fintechproject.transactions t
+        JOIN fintechproject.merchants m 
+            ON t.merchant_id = m.merchant_id
+        LEFT JOIN fintechproject.disputes d
+            ON d.transaction_id = t.transaction_id 
+    GROUP BY m.merchant_id, m.merchant_name
+    HAVING COUNT(t.transaction_id) >= 50
+        AND 
+            COUNTIF(status = 'Success') * 100.0 / COUNT(*) < 90.0
+        AND 
+            count(d.transaction_id) * 100.0 / count(t.transaction_id) > (SELECT * FROM overall_dispute_rate)
+
+![Merchant overall dispute rate](images/Q8.png)
 
 ### Phase 3 — Customer & Risk Analysis
 
